@@ -14,7 +14,7 @@ Daarna: http://localhost:3000
 
 ## Tests
 
-Backend (22 tests, geen netwerk nodig):
+Backend (29 tests, geen netwerk nodig: PDOK wordt nagebootst):
 
     cd backend
     pip install -r requirements-dev.txt

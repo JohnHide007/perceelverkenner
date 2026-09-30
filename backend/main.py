@@ -13,6 +13,7 @@ from verrijking import RD, WGS84, analyseer, herprojecteer, maak_geldig
 KADASTER_WMS = "https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0"
 BAG_WFS = "https://service.pdok.nl/lv/bag/wfs/v2_0"
 TIMEOUT = 15  # seconden
+BAG_MAX = 1000  # maximum aantal panden dat we per perceel bij de BAG WFS opvragen
 
 app = FastAPI(title="Perceelverkenner API", version="0.2.0")
 
@@ -61,7 +62,11 @@ async def lagen() -> dict:
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"PDOK niet bereikbaar: {exc}")
 
-    root = ET.fromstring(response.content)
+    try:
+        root = ET.fromstring(response.content)
+    except ET.ParseError:
+        raise HTTPException(status_code=502, detail="PDOK gaf geen geldige XML terug voor GetCapabilities")
+
     resultaat = []
     for element in root.iter():
         if _local(element.tag) != "Layer":
@@ -90,7 +95,7 @@ async def _haal_panden(bounds: tuple[float, float, float, float]) -> list[dict]:
         "BBOX": f"{minx},{miny},{maxx},{maxy},EPSG:28992",
         "SRSNAME": "EPSG:28992",
         "OUTPUTFORMAT": "application/json",
-        "COUNT": "1000",
+        "COUNT": str(BAG_MAX),
     }
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -116,6 +121,13 @@ async def verrijk(verzoek: VerrijkVerzoek) -> dict:
     panden = await _haal_panden(perceel_rd.bounds)
     analyse = analyseer(perceel_rd, panden)
 
+    waarschuwingen = []
+    if len(panden) >= BAG_MAX:
+        # De WFS kapt stil af bij COUNT: bij een heel groot perceel kunnen panden ontbreken
+        waarschuwingen.append(
+            f"De BAG gaf het maximum van {BAG_MAX} panden terug; bij dit grote perceel ontbreken er mogelijk panden."
+        )
+
     props = verzoek.perceel.get("properties") or {}
     return {
         "perceel": {
@@ -130,5 +142,6 @@ async def verrijk(verzoek: VerrijkVerzoek) -> dict:
         "kandidaten_in_bbox": len(panden),
         "panden": analyse["panden"],
         "genegeerd": analyse["genegeerd"],
+        "waarschuwingen": waarschuwingen,
         "bronnen": [KADASTER_WMS, BAG_WFS],
     }

@@ -40,5 +40,6 @@ export interface Verrijking {
   kandidaten_in_bbox: number;
   panden: Pand[];
   genegeerd: GenegeerdPand[];
+  waarschuwingen?: string[]; // bv. als de BAG het maximum aantal panden teruggaf
   bronnen: string[];
 }
