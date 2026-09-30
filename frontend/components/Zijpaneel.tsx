@@ -41,6 +41,12 @@ export default function Zijpaneel({ resultaat, laden, fout }: Props) {
 
       {resultaat && !laden && (
         <>
+          {resultaat.waarschuwingen?.map((w) => (
+            <p key={w} className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              {w}
+            </p>
+          ))}
+
           <section>
             <h2 className="text-lg font-semibold">{resultaat.perceel.aanduiding}</h2>
             <div className="mt-3 grid grid-cols-2 gap-2">

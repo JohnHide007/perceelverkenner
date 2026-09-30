@@ -6,10 +6,11 @@ services:
     healthcheck:
       # python:3.12-slim heeft geen curl, dus checken we /health met Python zelf
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
-      interval: 5s
+      interval: 30s        # daarna elke 30 s (minder ruis in de logs)
       timeout: 3s
-      retries: 10
-      start_period: 5s
+      retries: 3
+      start_period: 20s    # tijdens het opstarten tellen mislukte checks niet mee...
+      start_interval: 1s   # ...en wordt elke seconde gecheckt, zodat de frontend snel kan starten
     restart: unless-stopped
 
   frontend:
