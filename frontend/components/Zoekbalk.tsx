@@ -17,11 +17,16 @@ export default function Zoekbalk({ onKies }: Props) {
   const [bezig, setBezig] = useState(false);
   const laatsteVraag = useRef(0);
 
+  // Onder de 3 tekens tonen we niets. Dat leiden we af tijdens het renderen in plaats van
+  // state te wissen in de effect (dat gaf een extra render; zie react-hooks/set-state-in-effect).
+  const genoeg = tekst.trim().length >= 3;
+  const zichtbaar = genoeg ? resultaten : [];
+
   // Zoeken met een korte vertraging, zodat niet elke toetsaanslag een verzoek wordt
   useEffect(() => {
     const q = tekst.trim();
     if (q.length < 3) {
-      setResultaten([]);
+      laatsteVraag.current++; // een lopend, ouder antwoord mag niet meer binnenkomen
       return;
     }
     const vraag = ++laatsteVraag.current;
@@ -50,16 +55,16 @@ export default function Zoekbalk({ onKies }: Props) {
   };
 
   const opToets = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!open || resultaten.length === 0) return;
+    if (!open || zichtbaar.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActief((a) => (a + 1) % resultaten.length);
+      setActief((a) => (a + 1) % zichtbaar.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActief((a) => (a - 1 + resultaten.length) % resultaten.length);
+      setActief((a) => (a - 1 + zichtbaar.length) % zichtbaar.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      kies(resultaten[actief]);
+      kies(zichtbaar[actief]);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -75,7 +80,7 @@ export default function Zoekbalk({ onKies }: Props) {
         <input
           value={tekst}
           onChange={(e) => setTekst(e.target.value)}
-          onFocus={() => resultaten.length > 0 && setOpen(true)}
+          onFocus={() => zichtbaar.length > 0 && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={opToets}
           placeholder="Zoek een adres, straat of plaats…"
@@ -85,9 +90,9 @@ export default function Zoekbalk({ onKies }: Props) {
         {bezig && <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-env-200 border-t-env-700" />}
       </div>
 
-      {open && resultaten.length > 0 && (
+      {open && zichtbaar.length > 0 && (
         <ul className="absolute left-0 right-0 top-full z-[1001] mt-1 overflow-hidden rounded-xl border border-env-200 bg-white shadow-lg">
-          {resultaten.map((r, i) => (
+          {zichtbaar.map((r, i) => (
             <li key={r.id}>
               <button
                 type="button"

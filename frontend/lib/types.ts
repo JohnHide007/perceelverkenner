@@ -57,6 +57,7 @@ export interface Adressen {
 export interface HoogteTotaal {
   opgevraagd: number;
   gevonden: number;
+  mislukt: number; // panden waarvoor de 3D BAG (ook na een retry) geen antwoord gaf
   overgeslagen: number;
   hoogste_pand_m: number | null;
   meeste_bouwlagen: number | null;

@@ -129,10 +129,17 @@ export default function Kaart({ onKlik, resultaat, vlucht, klikpunt }: Props) {
     groep.clearLayers();
     if (!resultaat) return;
 
-    L.geoJSON(resultaat.perceel.geometry, {
+    const perceelLaag = L.geoJSON(resultaat.perceel.geometry, {
       style: { color: "#0B2A26", weight: 3, fillColor: "#BFD3C6", fillOpacity: 0.25, dashArray: "6 4" },
       interactive: false,
     }).addTo(groep);
+
+    // Valt het perceel (deels) buiten beeld? Dan erheen, zonder verder in te zoomen dan nodig
+    const kaart = kaartRef.current;
+    const grenzen = perceelLaag.getBounds();
+    if (kaart && grenzen.isValid() && !kaart.getBounds().contains(grenzen)) {
+      kaart.flyToBounds(grenzen, { padding: [40, 40], maxZoom: kaart.getZoom(), duration: 0.6 });
+    }
 
     for (const pand of resultaat.panden) {
       const kleur = bouwjaarKleur(pand.bouwjaar);
