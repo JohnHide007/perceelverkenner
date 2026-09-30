@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Perceelverkenner",
-  description: "Klik een perceel aan en zie wat erop staat.",
+  description: "Klik een perceel aan en zie wat erop staat: panden, adressen, hoogte, erfgoed en buurtcijfers uit open data.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

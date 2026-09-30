@@ -18,7 +18,7 @@ def nep_bag(monkeypatch):
     """Vervangt de BAG-aanroep; onthoudt de bbox waarmee hij werd aangeroepen."""
     aanroepen = []
 
-    async def _nep(bounds):
+    async def _nep(bounds, client=None):
         aanroepen.append(bounds)
         minx, miny, _, _ = bounds
         binnen = box(minx + 10, miny + 10, minx + 30, miny + 30)  # 400 m² in de hoek van de bbox
@@ -73,3 +73,17 @@ def test_ongeldig_perceel_geeft_422(verzoek, nep_bag):
     antwoord = client.post("/verrijk", json=verzoek)
     assert antwoord.status_code == 422
     assert nep_bag == []  # de BAG is niet eens aangeroepen
+
+
+def test_verrijk_bevat_alle_bronnen_ook_als_ze_leeg_zijn(nep_bag):
+    """De extra bronnen zijn in de tests 'leeg' (zie conftest.py) maar horen altijd in het antwoord te staan."""
+    body = client.post("/verrijk", json=VOORBEELD).json()
+    assert body["adressen"]["aantal"] == 0
+    assert body["hoogte"]["gevonden"] == 0 and body["panden"][0]["hoogte"] is None
+    assert body["erfgoed"] == {"rijksmonumenten": [], "gebieden": [], "beschermd": False}
+    assert body["buurt"] is None
+    assert isinstance(body["signalen"], list)
+    # Bronvermelding: kern (Kadaster, BAG-panden) + de vier modules, allemaal geslaagd
+    assert [b["naam"] for b in body["bronnen"]][:2] == ["Kadastrale kaart (Kadaster)", "Panden (BAG)"]
+    assert len(body["bronnen"]) == 6 and all(b["status"] == "ok" for b in body["bronnen"])
+    assert all("data" not in b for b in body["bronnen"])  # alleen metadata, geen dubbele payload
