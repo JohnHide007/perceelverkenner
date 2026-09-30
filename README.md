@@ -11,3 +11,13 @@ Interactieve kaart van Nederland: klik een kadastraal perceel aan en zie wat ero
     docker compose up --build
 
 Daarna: http://localhost:3000
+
+## Tests
+
+Backend (22 tests, geen netwerk nodig):
+
+    cd backend
+    pip install -r requirements-dev.txt
+    pytest -v
+
+Bij elke pull request draait GitHub Actions (`.github/workflows/ci.yml`) de backend-tests, lint + typecheck + build van de frontend, en een check op `docker-compose.yml`.
