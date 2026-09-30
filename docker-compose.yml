@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    # Geen "ports": de backend is alleen binnen het Docker-netwerk bereikbaar.
+    # Voor /docs vanaf je Mac tijdelijk toevoegen:  ports: ["8000:8000"]
+    healthcheck:
+      # python:3.12-slim heeft geen curl, dus checken we /health met Python zelf
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # "backend" is de servicenaam hierboven; Docker's DNS vertaalt die naar het IP van die container.
+      # Experiment: BACKEND_URL=http://localhost:8000 docker compose up
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
