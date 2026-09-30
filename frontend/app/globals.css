@@ -1,16 +1,66 @@
 @import "tailwindcss";
 
+/* Huisstijlkleuren als Tailwind-tokens: bg-env-900, text-env-700, border-env-200, … */
+@theme {
+  --color-env-900: #0b2a26; /* diepgroen: tekst, accenten */
+  --color-env-700: #5e8c73; /* middengroen: knoppen, chips, status */
+  --color-env-200: #bfd3c6; /* lichtgroen: randen, legenda */
+  --color-env-100: #e6efe9; /* heel licht: hover, achtergrond van kaarten */
+  --color-env-50: #f4f7f5; /* paneelachtergrond */
+}
+
 :root {
-  --background: #ffffff;
+  --background: #f4f7f5;
   --foreground: #0b2a26;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "tnum"; /* cijfers even breed, prettig in tabelletjes */
 }
 
 .leaflet-container {
   cursor: crosshair;
+  font-family: inherit;
+  background: #e9ecea;
+}
+
+/* Tooltip op panden */
+.pv-tooltip {
+  background: #0b2a26;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgb(11 42 38 / 0.25);
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 6px 9px;
+}
+.pv-tooltip::before {
+  border-top-color: #0b2a26;
+}
+
+/* Leaflet-bedieningselementen in de huisstijl */
+.leaflet-bar a {
+  color: #0b2a26;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgb(255 255 255 / 0.8);
+}
+
+/* Dunne schuifbalk in het zijpaneel */
+aside::-webkit-scrollbar {
+  width: 8px;
+}
+aside::-webkit-scrollbar-thumb {
+  background: #bfd3c6;
+  border-radius: 8px;
 }

@@ -122,3 +122,41 @@ def test_bag_onbereikbaar_geeft_502(nep_pdok):
     antwoord = client.post("/verrijk", json=VOORBEELD)
     assert antwoord.status_code == 502
     assert "BAG WFS niet bereikbaar" in antwoord.json()["detail"]
+
+
+# ---------- extra bronnen via /verrijk ----------
+
+def test_haperende_extra_bron_breekt_het_antwoord_niet(nep_pdok):
+    """Alleen de BAG-panden zijn de kern. Als bijvoorbeeld het CBS of de 3D BAG faalt, komt dat als
+    status 'fout' in de bronvermelding en blijft de rest van het antwoord gewoon staan."""
+
+    def antwoord(request):
+        if request.url.params.get("TYPENAMES") == "bag:pand":
+            return _pand_rond(request)
+        if "cbs" in request.url.path:
+            return httpx.Response(503)
+        if "3dbag" in request.url.host:
+            raise httpx.ReadTimeout("traag", request=request)
+        return httpx.Response(200, json={"type": "FeatureCollection", "features": []})
+
+    nep_pdok.antwoord = antwoord
+    antwoord = client.post("/verrijk", json=VOORBEELD)
+    assert antwoord.status_code == 200
+    body = antwoord.json()
+    status = {b["naam"]: b for b in body["bronnen"]}
+    assert status["Buurtcijfers (CBS 2024)"]["status"] == "fout"
+    assert "status 503" in status["Buurtcijfers (CBS 2024)"]["fout"]
+    assert status["3D BAG (hoogte en dak)"]["status"] == "fout"
+    assert status["Erfgoed (RCE)"]["status"] == "ok"
+    assert body["buurt"] is None and body["hoogte"] is None
+    assert body["bebouwing"]["aantal_panden"] == 1  # de kern is er gewoon
+
+
+def test_alle_bronnen_worden_tegelijk_bevraagd_in_rd(nep_pdok):
+    nep_pdok.antwoord = _pand_rond
+    client.post("/verrijk", json=VOORBEELD)
+    hosts = sorted({r.url.host for r in nep_pdok.verzoeken})
+    assert hosts == ["api.3dbag.nl", "service.pdok.nl"]
+    typenames = {r.url.params.get("TYPENAMES") for r in nep_pdok.verzoeken if "TYPENAMES" in r.url.params}
+    assert typenames == {"bag:pand", "bag:verblijfsobject", "ps-ch:rce_inspire_points", "ps-ch:rce_inspire_polygons", "wijkenbuurten:buurten"}
+    assert all(r.url.params["SRSNAME"] == "EPSG:28992" for r in nep_pdok.verzoeken if "SRSNAME" in r.url.params)
